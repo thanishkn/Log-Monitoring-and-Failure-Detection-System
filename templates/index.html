@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Service Metrics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9fbfc;
+            color: #333;
+            background-image: url("/static/bg11.jpg");
+            background-attachment : fixed;
+            background-size : 100% 100%;
+            background-repeat : no-repeat;
+        }
+
+        h2 {
+            text-align: center;
+            margin: 40px 0 20px;
+            font-size: 30px;
+            color: #2b2d42;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .material-icons {
+            vertical-align: middle;
+            color: #5e60ce;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        table {
+            width: 85%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 20px 0 40px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        th {
+            background: #cddafd;
+            color: #2b2d42;
+            padding: 14px;
+            font-size: 15px;
+        }
+
+        td {
+            padding: 14px;
+            text-align: center;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f6ff;
+        }
+
+        tr:hover {
+            background-color: #e7f0ff;
+        }
+
+        .charts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            width: 90%;
+            margin-bottom: 60px;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .chart-title {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #3c3f58;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <h2>
+        <span class="material-icons">insights</span>
+        Service Metrics Report
+    </h2>
+    
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="material-icons">miscellaneous_services</span> Service</th>
+                    <th><span class="material-icons">schedule</span> Avg Response Time (ms)</th>
+                    <th><span class="material-icons">error_outline</span> Failures</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metric in metrics %}
+                <tr>
+                    <td>{{ metric.service }}</td>
+                    <td>{{ metric.total_average_response_time }}</td>
+                    <td>{{ metric.number_of_failures }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="charts">
+            <div class="chart-card">
+                <div class="chart-title">
+                    <span class="material-icons">pie_chart</span>
+                    Failures Distribution
+                </div>
+                <canvas id="failuresChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-title">
+                    <span class="material-icons">bar_chart</span>
+                    Avg Response Time by Service
+                </div>
+                <canvas id="responseTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const services = {{ metrics | map(attribute='service') | list | safe }};
+        const failures = {{ metrics | map(attribute='number_of_failures') | list | safe }};
+        const responseTimes = {{ metrics | map(attribute='total_average_response_time') | list | safe }};
+
+        const softPalette = ['#f4a261', '#e76f51', '#ffb997', '#ffdab9', '#f6bd60', '#e9c46a'];
+
+        const failuresCtx = document.getElementById('failuresChart').getContext('2d');
+        new Chart(failuresCtx, {
+            type: 'doughnut',
+            data: {
+                labels: services,
+                datasets: [{
+                    label: 'Failures',
+                    data: failures,
+                    backgroundColor: softPalette,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '60%', // controls the thickness of the donut
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#3c3f58'
+                        }
+                    }
+                }
+            }
+        });
+        
+
+        const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+        new Chart(responseCtx, {
+            type: 'bar',
+            data: {
+                labels: services,
+                datasets: [{
+                    label: 'Avg Response Time (ms)',
+                    data: responseTimes,
+                    backgroundColor: '#f4a261',
+                    borderColor: '#f4a261',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        ticks: { color: '#333' },
+                        grid: { color: '#eee' }
+                    },
+                    y: {
+                        ticks: { color: '#333' },
+                        grid: { color: '#eee' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#3c3f58'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
